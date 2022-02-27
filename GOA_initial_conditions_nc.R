@@ -8,7 +8,7 @@
 # Setup -------------------------------------------------------------------
 
 # List of packages for session
-.packages = c("Rcpp","shinyrAtlantis","devtools","tidyverse","stringi","ncdf4", "data.table")
+.packages = c("Rcpp","shinyrAtlantis","devtools","tidyverse","stringi","ncdf4", "data.table", "rbgm", "sf")
 
 # Install CRAN packages (if not already installed)
 .inst <- .packages %in% installed.packages()
@@ -50,7 +50,24 @@ func.groups <- read_csv(grp.file) %>%
 csv.name   <- "GOAtemplate"
 make.init.csv(grp.file, bgm.file, cum.depths, csv.name)
 
-#takes life history created in AMPS_Bioparam_table.gsheet and estimates numbers by age
+# Fixing a couple of issues with horiz.csv and init.csv that create problems in init.nc
+# 1. The NetDCF is written out without long-name attribute for Rugosity. This tracer seems to be the only one where name=longname in init.csv. Fix that.
+
+init.data <- read.csv('GOAtemplate_init.csv')
+init.data[init.data$name=='Rugosity',]$long_name <- 'Rugosity (R)'
+
+# 2. the tracer pH does not feature in init.csv. Let's add it - copying atts from CalCurrent
+pH.frame <- data.frame("pH", TRUE, 2, "[ z b ]", "tracer", "log10H", "pH of water", 0, 1, 1, 1, 1, 0, 0, 8.1, NA, NA, NA, NA, NA, NA, NA, "constant", "uniform", 8.1, 8.1)
+colnames(pH.frame)<-colnames(init.data)
+
+init.data1 <- rbind(init.data[1:which(init.data$name=='Temp'),],
+                   pH.frame,
+                   init.data[(which(init.data$name=='Temp')+1):nrow(init.data),])
+
+write.csv(init.data1,'GOAtemplate_init.csv',row.names = F)
+rm(init.data, init.data1)
+
+#takes life history created in GOA_Bioparam_table.gsheet and estimates numbers by age
 
 life.history <- read_csv("life_history_parameters.csv")
 mammals.w.age <-  read_csv("marine_mammal_w_age.csv") # for marine mammals weight at age are known
@@ -415,7 +432,7 @@ nc_vector <- function(eachspcode, num.biomass.age) {
   
 }
 
-#this final vector should have 1692 rows
+#this final vector should have 1653 rows
 
 num.biomass.frame <- lapply(age.structured.sp, nc_vector, num.biomass.age = num.biomass.age) %>% 
   bind_rows %>% 
@@ -423,43 +440,51 @@ num.biomass.frame <- lapply(age.structured.sp, nc_vector, num.biomass.age = num.
   dplyr::rename(Variable=variable)
 
 #this can be used if it is the first time you create init files
-#make.init.nc(bgm.file, cum.depths, init.file, horiz.file, nc.file)
 init.file  <- "GOA_init.csv"
 horiz.file <- "GOA_horiz.csv"
 nc.file    <- "GOA_cb.nc"
 
-#convert biomass data in horiz init into N
-
+#add Nums to empty horiz.csv file created above
 horiz.data %>% 
   filter(!grepl("_Nums",Variable)) %>% 
   mutate_if(is.numeric, round, 5) %>% 
-  bind_rows(num.biomass.frame) %>% 
+  bind_rows(num.biomass.frame) %>%
   write_csv(horiz.file)
 
 init.data %>% 
   write_csv(init.file)
 
-# create a NetCDF file based on csv files
-make.init.nc(bgm.file,cum.depths,init.file,horiz.file,nc.file) # check if values for RN and SN are 0 or _
+# AR: here using a modified version of make.init.nc() to solve the issue of zeroes being packed as cdf vectors instead of '_'
+source(file = '../code/modified_funs.R')
+
+make.init.nc.ar(bgm.file,cum.depths,init.file,horiz.file,nc.file) # check if values for RN and SN are 0 or _
 
 # Biomass pools -----------------------------------------------------------
 
-#TODO we should try and automate pasting the biomass pool vectors to the CDF, instead of doing it manually in a text editor
-
 # will need the BGM for box areas here
-library(rbgm)
-library(sf)
 atlantis.bgm <- read_bgm('../data/GOA_WGS84_V4_final.bgm')
 atlantis.box <- atlantis.bgm %>% box_sf()
 
-# write nc to cdf for editing (adding biomass pools and habitat vectors)
-# shell("ncdump ../data/GOA_cb.nc > ../data/GOA_cb.cdf", wait = TRUE)
-
 # Plankton and nutrients:
-# add manually files obtained with init_calculator.R at https://github.com/somros/plankton_nutrients_init
+# values calculated in init_calculator.R at https://github.com/somros/plankton_nutrients_init
 # local address is C:/Users/Alberto Rovellini/Documents/GOA/SDM/Plankton_and_nutrients/outputs/init/
 
-# Invertebrates for which we have SDMs
+plankton.files <- list.files('C:/Users/Alberto Rovellini/Documents/GOA/SDM/Plankton_and_nutrients/outputs/init/', full.names = T)
+
+outnc <- nc_open(nc.file, write=TRUE) # open .nc file
+
+for(i in 1:length(plankton.files)){
+  this.file <- plankton.files[i]
+  this.var <- gsub('.txt','',gsub('.*init/','',this.file))
+  this.data <- read.table(this.file,sep=',')
+  this.data.horiz <- t(this.data[,-ncol(this.data)])
+  
+  ncvar_put(outnc, varid = this.var, vals = this.data.horiz)
+}
+
+nc_close(outnc)
+
+# Invertebrates that we have SDMs for
 # We read in virgin biomass and spatial distributions
 # read in spatial distributions of invertebrates
 invert.distrib <- read.csv('../data/seasonal_distribution_inverts.csv')
@@ -479,6 +504,8 @@ no.species <- setdiff(dist.species,biom.species) # missing all the plankton, whi
 # all the biomass in the box is concentrated in the first 1 m of depth from the bottom - it should get redistributed by the
 # vertical params in biol.prm at t0 anyway
 
+outnc <- nc_open(nc.file, write=TRUE) # open .nc file
+
 for(i in 1:length(all.species)){
   
   this.species <- all.species[i]
@@ -492,22 +519,25 @@ for(i in 1:length(all.species)){
            .bx0 = 0:108) %>%
     left_join((atlantis.box %>% st_set_geometry(NULL) %>% select(.bx0,area)), by = '.bx0') %>%
     mutate(mgNm2 = round(mgN/area,digits=5)) %>%
-    select(mgNm2)
+    select(mgNm2) %>%
+    t()
   
   # have them all on the bottom, even CEP and PWN that are mg N m-3. Need to look into how these guys get distributed with vert
   
   if(this.unit[1]=='mg N m-3') {
-    this.init <- cbind(this.init,matrix(0,nrow=nrow(this.init),ncol=6))
-    write.table(this.init,paste0('../output/inverts_init/',this.species,'_N.txt'), sep = ', ', row.names = FALSE, col.names = FALSE, eol = ',\n')
-  } else {
-    this.init <- t(this.init)
-    write.table(this.init,paste0('../output/inverts_init/',this.species,'_N.txt'), sep = ', ', row.names = FALSE, col.names = FALSE, eol = ',\n')
+    this.init <- rbind(matrix(0,nrow=5,ncol=ncol(this.init)),
+                       this.init,
+                       matrix(0,nrow=1,ncol=ncol(this.init)))
   }
   
+  ncvar_put(outnc, varid = paste(this.species,'N',sep='_'), vals = this.init)
+
 }
 
 # note that we are getting some pretty high values here for some of this benthos. 
 # this is entirely reliant on old ecopath estimates, so it may not be sensible at all
+
+nc_close(outnc)
 
 # Habitat types -----------------------------------------------------------
 
@@ -519,18 +549,10 @@ reef <- cover %>% filter(atlantis_class=='Reef') %>% mutate(cover = round(cover,
 flat <- cover %>% filter(atlantis_class=='Sand') %>% mutate(cover = round(cover, digits = 3)) %>% select(cover) %>% t()
 soft <- cover %>% filter(atlantis_class=='Soft') %>% mutate(cover = round(cover, digits = 3)) %>% select(cover) %>% t()
 
-write.table(reef,'../output/habitat/reef.txt', sep = ', ', row.names = FALSE, col.names = FALSE, eol = ';\n')
-write.table(flat,'../output/habitat/flat.txt', sep = ', ', row.names = FALSE, col.names = FALSE, eol = ';\n')
-write.table(soft,'../output/habitat/soft.txt', sep = ', ', row.names = FALSE, col.names = FALSE, eol = ';\n')
+outnc <- nc_open(nc.file, write=TRUE) # open .nc file
 
-# Pack init.nc ------------------------------------------------------------
+ncvar_put(outnc, varid = 'reef', vals = reef)
+ncvar_put(outnc, varid = 'flat', vals = flat)
+ncvar_put(outnc, varid = 'soft', vals = soft)
 
-# attach spatial distributions to cdf file
-
-# convert back to nc file
-# shell("ncgen -o GOA_cb_mod.nc -x GOA_cb_mod.cdf", wait = TRUE)
-
-# view the initial conditions file
-nc.file    <- "GOA_cb_mod.nc"
-init.obj <- make.sh.init.object(bgm.file, nc.file)
-sh.init(init.obj)
+nc_close(outnc)
