@@ -69,6 +69,24 @@ cat("## Flags and switches\n \n",file=goa.header, append=TRUE)
 cat(flags.vector, sep = "\n \n", file=goa.header, append=TRUE)
 cat("\n \n",file=goa.header, append=TRUE)
 
+# do flag vectors (long flags)
+long.flags <- read_xlsx("../data/GOA_biological_parameters_fg.xlsx",sheet = "vector_flags")
+these_flags <- long.flags$flag
+
+for (i in 1:length(these_flags)){
+  this_flag <- these_flags[i] 
+  
+  comnt <- paste((long.flags[long.flags$flag==this_flag,]$note), sep = ' ')
+  flag <- paste(this_flag, (long.flags[long.flags$flag==this_flag,]$length), sep = ' ')
+  vals <- as.character(long.flags[long.flags$flag==this_flag,4:ncol(long.flags)])
+  vals <- paste(vals[vals!='NA'], collapse = '   ')
+  
+  cat(comnt, sep = "\n", file=goa.header, append=TRUE)
+  cat(flag, sep = "\n", file=goa.header, append=TRUE)
+  cat(vals, sep = "\n", file=goa.header, append=TRUE)
+  cat("\n \n",file=goa.header, append=TRUE)
+}
+
 #template with info on each parameter, it is a vector, with units and description
 # ALBI: most likely here we will have issues, e.g. mismatch in lengths, missing params, etc.
 prm.template <- read_xlsx("../data/GOA_biological_parameters_fg.xlsx",sheet = "template") %>% 
