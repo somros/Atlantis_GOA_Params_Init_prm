@@ -220,7 +220,7 @@ generate.vars.init <- function(grp.file, cum.depths, df.atts) {
 
 make.init.nc.ar <- function(bgm.file, cum.depths, init.file, horiz.file, nc.file) {
   
-    # nc file is created using the data stored in the following two csv files
+  # nc file is created using the data stored in the following two csv files
   df.init <- df.grp <- read.csv(file = init.file, header = TRUE,
                                 stringsAsFactors = FALSE)
   df.horiz <- df.grp <- read.csv(file = horiz.file, header = TRUE,

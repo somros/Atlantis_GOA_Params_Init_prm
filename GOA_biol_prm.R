@@ -40,8 +40,8 @@ goa.horiz <- read_csv("../data/GOAtemplate_horiz.csv")
 #distributions for these invert groups are read separately
 invert.groups <- c("Octopus", "Squid", "Crab_tanner", "Crab_king", "Crab_other", "Shrimp_pandalid", "Shrimp_other", "Epibenthic_carn", 
                    "Epibenthic_graze", "Corals", "Sponges", "Filter_feeders", "Bivalves", "Benthic_carnivores", "Meiobenthos", 
-                   "Deposit_feeders", "Macroalgae", "Euphausiids", "Macrozooplankton", "Mesozooplankton", "Microzoplankton", 
-                   "Jellyfish", "Gelatinous_other", "Peropods", "Diatoms", "Picophytoplankton")
+                   "Deposit_feeders", "Macroalgae", "Euphausiids", "Macrozooplankton", "Mesozooplankton", "Microzooplankton", 
+                   "Jellyfish", "Gelatinous_other", "Pteropods", "Diatoms", "Picophytoplankton")
 
 invert.codes <- c("OCT", "SQD", "TAN", "KIN", "CRO", "PAN", "PWN", "EBC", "BG", "COR", "SPG", "BFF", "BIV", "BC", "BO", "BD", "MA", 
                   "EUP", "ZL", "ZM", "ZS", "JEL", "GEL", "PTE", "PL", "PS")
@@ -254,7 +254,7 @@ write.prm <- function(eachrow){
       
       #spatial distribution is for vertebrates and invertebrates that move
       group.code <- grp.file %>%
-        filter(!Code %in% c("BB","PB","MA","DL","DF","DC")) %>% # so I guess we do not give distributions for detritus but we do for plankton?
+        filter(!Code %in% c("BB","PB","MA","DL","DR","DC")) %>% # so I guess we do not give distributions for detritus but we do for plankton?
         distinct(Code) %>%
         .$Code
       

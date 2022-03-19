@@ -1,6 +1,5 @@
-#' Build NC initial conditions files
+#' Build NC initial conditions files for Atlantis GOA
 #' 
-#' @author Hem Nalini Morzaria Luna
 #' @author Alberto Rovellini
 #' @date February 2022
 #' 
