@@ -249,7 +249,7 @@ make.init.nc.ar <- function(bgm.file, cum.depths, init.file, horiz.file, nc.file
   # create dimensions stored in the NetCDF file
   dim1 <- ncdim_def( # create a time dimension
     name = 't',
-    units = 'seconds since 2000-01-01 00:00:00 +10',
+    units = 'seconds since 1990-01-01 00:00:00 -9',
     unlim = TRUE,
     vals = as.double(0.0)
   )
