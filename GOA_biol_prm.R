@@ -21,16 +21,18 @@ if(length(.packages[!.inst]) > 0) install.packages(.packages[!.inst])
 # Load packages into session 
 lapply(.packages, require, character.only=TRUE)
 
+select <- dplyr::select
+
 #functional groups
 grp.file <- read_csv("../data/GOA_Groups.csv")
 #last three slots are assumed to be dedtritus groups
 
 # nums and w at age, estimated in PS_initial_conditions.nc
-num.biomass.age <- read_csv("../data/Nums_age_functional_groups.csv") # UPDATE AFTER NOTES AND BC
-life.history <- read_csv("../data/life_history_parameters.csv") # UPDATE AFTER DOING NOTES
+num.biomass.age <- read_csv("../data/Nums_age_functional_groups.csv") 
+life.history <- read_csv("../data/life_history_parameters.csv") 
 #distributions
-seasonal.distribution <- read_csv("../data/seasonal_distribution.csv") # UPDATE AFTER CANADA REWORK AND ISAAC"S SALMON
-invert.distribution <- read_csv("../data/seasonal_distribution_inverts.csv") # UPDATE AFTER CANADA REWORK
+seasonal.distribution <- read_csv("../data/seasonal_distribution.csv") 
+invert.distribution <- read_csv("../data/seasonal_distribution_inverts.csv") 
 
 prey.matrix <- read_csv("../data/goa_pprey_matrix.csv")
 
@@ -45,8 +47,6 @@ invert.groups <- c("Octopus", "Squid", "Crab_tanner", "Crab_king", "Crab_other",
 
 invert.codes <- c("OCT", "SQD", "TAN", "KIN", "CRO", "PAN", "PWN", "EBC", "BG", "COR", "SPG", "BFF", "BIV", "BC", "BO", "BD", "MA", 
                   "EUP", "ZL", "ZM", "ZS", "JEL", "GEL", "PTE", "PL", "PS")
-
-# non.coastal.polygons <- c(18,19,20,32,43)
 
 # bgm.info <- read_csv("BGM_boxinfo.csv") %>% 
 #   dplyr::rename(BOX_ID=box_id) %>% 
