@@ -555,3 +555,25 @@ ncvar_put(outnc, varid = 'flat', vals = flat)
 ncvar_put(outnc, varid = 'soft', vals = soft)
 
 nc_close(outnc)
+
+
+# Temp, salt, Oxygen ----------------------------------------------------------
+
+# these 3 are initialized with generic placeholders in the shinyRAtlantis package, but according to the log file they may limit the initial 
+# distributions of several groups. Let's set them to values that make more sense:
+# Temp = 6 C
+# salt = 33 ppm
+# Oxygen = 8000 mg O2 m-3
+
+outnc <- nc_open(nc.file, write=TRUE) # open .nc file
+
+tracers <- data.frame('tracer'=c('Temp','salt','Oxygen'), 'fillval'=c(6,33,8000))
+
+for (i in 1:nrow(tracers)){
+  this_tracer <- tracers[i,]$tracer
+  this_table <- ncvar_get(outnc, this_tracer)
+  this_table[which(this_table != 0)] <- tracers[i,]$fillval
+  ncvar_put(outnc, varid = this_tracer, vals = this_table)
+}
+
+nc_close(outnc)
