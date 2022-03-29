@@ -496,12 +496,15 @@ invert.biomass <- read.csv('../data/inverts_virgin_biomass.csv')
 # select species for which we have info to do this
 dist.species <- unique(gsub('_A_S.','',colnames(invert.distrib)))
 biom.species <- invert.biomass$name
-all.species <- intersect(dist.species,biom.species) # these are the species we will do this for. What is missing?
-no.species <- setdiff(dist.species,biom.species) # missing all the plankton, which we take from NPZ
+all.species <- intersect(dist.species,biom.species) # these are the species we will do this for
+
+# let's drop the plankton from here, as we already get raw concentration from NPZ
+all.species <- setdiff(all.species, c('Euphausiids','Macrozooplankton','Mesozooplankton','Microzooplankton'))
 
 # make and write concentrations per box - in mg N m-2 for benthos and in mg N m-3 for CEP and PWN, for these assuming that at t0
 # all the biomass in the box is concentrated in the first 1 m of depth from the bottom - it should get redistributed by the
 # vertical params in biol.prm at t0 anyway
+# do we need to put infauna in the sediment? 
 
 outnc <- nc_open(nc.file, write=TRUE) # open .nc file
 
@@ -522,11 +525,18 @@ for(i in 1:length(all.species)){
     t()
   
   # have them all on the bottom, even CEP and PWN that are mg N m-3. Need to look into how these guys get distributed with vert
+  # If BC, BD, BO, put them in the sediment instead
+  
+  infauna <- c('Benthic_carnivores','Meiobenthos','Deposit_feeders')
   
   if(this.unit[1]=='mg N m-3') {
-    this.init <- rbind(matrix(0,nrow=5,ncol=ncol(this.init)),
-                       this.init,
-                       matrix(0,nrow=1,ncol=ncol(this.init)))
+    if(this.species %in% infauna) {
+      this.init <- rbind(matrix(0,nrow=6,ncol=ncol(this.init)),
+                         this.init)
+    } else {
+      this.init <- rbind(this.init,
+                         matrix(0,nrow=6,ncol=ncol(this.init)))
+    }
   }
   
   ncvar_put(outnc, varid = paste(this.species,'N',sep='_'), vals = this.init)
@@ -534,7 +544,7 @@ for(i in 1:length(all.species)){
 }
 
 # note that we are getting some pretty high values here for some of this benthos. 
-# this is entirely reliant on old ecopath estimates, so it may not be sensible at all
+# this is entirely reliant on old ecopath estimates, so it may not be sensible
 
 nc_close(outnc)
 
