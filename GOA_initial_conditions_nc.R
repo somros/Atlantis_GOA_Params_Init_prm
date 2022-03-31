@@ -557,6 +557,7 @@ for(i in 1:length(all.species)){
       this.init <- depth.key %>%
         mutate(Nm2 = this.init[1,],
                Nm3 = Nm2/dz) %>%
+        mutate(Nm3 = replace(Nm3, is.nan(Nm3), 0)) %>%
         pull(Nm3) %>%
         rbind(matrix(0,nrow=6,ncol=ncol(this.init)))
     }
