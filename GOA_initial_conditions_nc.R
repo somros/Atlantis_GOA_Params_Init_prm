@@ -508,6 +508,25 @@ all.species <- setdiff(all.species, c('Euphausiids','Macrozooplankton','Mesozoop
 
 outnc <- nc_open(nc.file, write=TRUE) # open .nc file
 
+# we need to get the thickness of the bottom layer of each box, to divide the concentration per m2
+
+make.lyr <- function(depth){
+  lyrvec <- c(cum.depths[cum.depths<depth],depth)
+  lyrframe <- data.frame(lyr = length(lyrvec):1, lower = lyrvec)
+  return(lyrframe)
+}
+
+depth.key <- atlantis.box %>%
+  st_set_geometry(NULL) %>%
+  mutate(botz = -botz) %>%
+  mutate(lyr = purrr::map(botz, make.lyr)) %>%
+  unnest(cols = c(lyr)) %>%
+  group_by(box_id) %>%
+  mutate(dz = lower-lag(lower, default = 0)) %>%
+  ungroup() %>%
+  filter(lyr==1) %>%
+  select(box_id,dz)
+
 for(i in 1:length(all.species)){
   
   this.species <- all.species[i]
@@ -531,11 +550,15 @@ for(i in 1:length(all.species)){
   
   if(this.unit[1]=='mg N m-3') {
     if(this.species %in% infauna) {
-      this.init <- rbind(matrix(0,nrow=6,ncol=ncol(this.init)),
+      this.init <- rbind(matrix(0,nrow=6,ncol=ncol(this.init)), # sediment layer is 1 m so this is fine
                          this.init)
-    } else {
-      this.init <- rbind(this.init,
-                         matrix(0,nrow=6,ncol=ncol(this.init)))
+    } else { # attach depth key and divide by layer thickness so that we have conc per m3 
+      
+      this.init <- depth.key %>%
+        mutate(Nm2 = this.init[1,],
+               Nm3 = Nm2/dz) %>%
+        pull(Nm3) %>%
+        rbind(matrix(0,nrow=6,ncol=ncol(this.init)))
     }
   }
   
