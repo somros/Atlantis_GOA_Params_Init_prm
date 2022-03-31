@@ -587,3 +587,26 @@ for (i in 1:nrow(tracers)){
 }
 
 nc_close(outnc)
+
+
+# Bacteria ----------------------------------------------------------------
+
+# BB and PB are all packed as 0 by the make code. This means that their fillvalues do not stick (and who knows about those fillvalues anyway)
+# Here I coerce them to 0.1 for PB in all layers but sed, and to 0.1 in sediment for BB
+
+outnc <- nc_open(nc.file, write=TRUE) # open .nc file
+
+bacts <- c('Pelagic_bacteria_N','Benthic_bacteria_N')
+
+for(i in 1:length(bacts)){
+  this_bact <- bacts[i]
+  this_table <- ncvar_get(outnc, this_bact)
+  if(this_bact=='Pelagic_bacteria_N'){
+    this_table1 <- rbind(matrix(0.1,nrow = (nrow(this_table)-1), ncol = ncol(this_table)),rep(0,109))
+  } else {
+    this_table1 <- rbind(matrix(0,nrow = (nrow(this_table)-1), ncol = ncol(this_table)),rep(0.1,109))
+  }
+  ncvar_put(outnc, varid = this_bact, vals = this_table1)
+}
+
+nc_close(outnc)
