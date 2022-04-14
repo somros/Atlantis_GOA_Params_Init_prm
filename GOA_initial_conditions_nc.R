@@ -441,7 +441,7 @@ num.biomass.frame <- lapply(age.structured.sp, nc_vector, num.biomass.age = num.
 #this can be used if it is the first time you create init files
 init.file  <- "GOA_init.csv"
 horiz.file <- "GOA_horiz.csv"
-nc.file    <- "GOA_cb.nc"
+nc.file    <- "GOA_cb_new.nc"
 
 #add Nums to empty horiz.csv file created above
 horiz.data %>% 
@@ -590,28 +590,35 @@ ncvar_put(outnc, varid = 'soft', vals = soft)
 
 nc_close(outnc)
 
+# Tracers ----------------------------------------------------------
 
-# Temp, salt, Oxygen ----------------------------------------------------------
+# Some important tracers are initialized with default values in the wc and sed in the shinyRAtlantis package.
+# However, according to the log file they may limit the initial distributions of several groups. 
+# These tracers are: Temp, salt, Oxygen, pH, Si, Det_Si
+# possibly more (e.g. Chl-a and DON) - keep an eye on these
+# I am not sure why the code won't just let the fillvalues do their part, but instead of changing the fill values and the function, I am fixing them here
 
-# these 3 are initialized with generic placeholders in the shinyRAtlantis package, but according to the log file they may limit the initial 
-# distributions of several groups. Let's set them to values that make more sense:
-# Temp = 6 C
-# salt = 33 ppm
+# Let's set them to values that make more sense:
+# Temp = 6 C (as the fillvalue of 15 will kill off some of my critters with the thermal windows we got from Aquamaps)
+# salt = 33 psu
 # Oxygen = 8000 mg O2 m-3
+# pH = 8.1
+# Si = 2194 mg Si m-3 https://www.sciencedirect.com/science/article/abs/pii/030442039190021N
+# Det_Si = 2194 mg Si m-3 https://www.sciencedirect.com/science/article/abs/pii/030442039190021N
 
 outnc <- nc_open(nc.file, write=TRUE) # open .nc file
 
-tracers <- data.frame('tracer'=c('Temp','salt','Oxygen'), 'fillval'=c(6,33,8000))
+tracers <- data.frame('tracer'=c('Temp','salt','Oxygen','pH','Si','Det_Si'), 'fillval'=c(6,33,8000,8.1,2194,2194))
 
 for (i in 1:nrow(tracers)){
   this_tracer <- tracers[i,]$tracer
   this_table <- ncvar_get(outnc, this_tracer)
   this_table[which(this_table != 0)] <- tracers[i,]$fillval
+  this_table[which(this_table == 0)] <- NA # and set missing layers to NA so that they get packed as '_', it will not matter but good for consistency
   ncvar_put(outnc, varid = this_tracer, vals = this_table)
 }
 
 nc_close(outnc)
-
 
 # Bacteria ----------------------------------------------------------------
 

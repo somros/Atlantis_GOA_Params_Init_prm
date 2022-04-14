@@ -270,7 +270,7 @@ make.init.nc.ar <- function(bgm.file, cum.depths, init.file, horiz.file, nc.file
   vars <- NULL
   list.indx <- 1
   for (i in 1:dim(df.init)[1]) {
-
+    
     var.name  <- df.init$name[i]
     var.units <- df.init$units[i]
     if (df.init$dimensions[i] == 1) {
@@ -393,6 +393,13 @@ make.init.nc.ar <- function(bgm.file, cum.depths, init.file, horiz.file, nc.file
         j <- which(df.horiz$Variable == df.init$name[idx])
         var.data <- df.horiz[j,2:(numboxes+1)]
       }
+      
+      # Albi 4/14/2022: if we are packing 0 uniformly, turn all to NA as those will need to be filled with an appropriate fillvalue and 0 prevents that from happening
+      # NA ensures that we are packing '_' instead of 0
+      if(sum(var.data)==0){
+        var.data[var.data==0] <- NA
+      }
+      
       ncvar_put(outnc, varid = df.init$name[idx], vals = var.data)
     } else {
       #var.data <- matrix(data = 0, nrow = numlayers+1, ncol = numboxes)
@@ -429,6 +436,13 @@ make.init.nc.ar <- function(bgm.file, cum.depths, init.file, horiz.file, nc.file
       }
       var.data <- var.data * by.layer
       
+      # Albi 4/14/2022: if we are packing 0 uniformly, turn all to NA as those will need to be filled with an appropriate fillvalue and 0 prevents that from happening
+      # NA ensures that we are packing '_' instead of 0
+      if(sum(var.data)==0){
+        var.data[var.data==0] <- NA
+      }
+      
+      # this should now be superfluous but should not hurt as an extra check
       if(grepl("StructN", df.init$name[idx]) | grepl("ResN", df.init$name[idx])) {
         var.data[var.data==0] <- NA
       }
