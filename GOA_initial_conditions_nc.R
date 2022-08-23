@@ -604,11 +604,12 @@ nc_close(outnc)
 # Oxygen = 8000 mg O2 m-3
 # pH = 8.1
 # Si = 2194 mg Si m-3 https://www.sciencedirect.com/science/article/abs/pii/030442039190021N
+# Alternatively Si = 336 mg Si m-3 (from 12 micromolar for Silicates in Jan 1990 in <100 m waters on GOA shelf from COBALT https://gulf-of-alaska.portal.aoos.org/#map)
 # Det_Si = 2194 mg Si m-3 https://www.sciencedirect.com/science/article/abs/pii/030442039190021N
 
 outnc <- nc_open(nc.file, write=TRUE) # open .nc file
 
-tracers <- data.frame('tracer'=c('Temp','salt','Oxygen','pH','Si','Det_Si'), 'fillval'=c(6,33,8000,8.1,2194,2194))
+tracers <- data.frame('tracer'=c('Temp','salt','Oxygen','pH','Si','Det_Si'), 'fillval'=c(6,33,8000,8.1,336,336))
 
 for (i in 1:nrow(tracers)){
   this_tracer <- tracers[i,]$tracer
@@ -619,6 +620,37 @@ for (i in 1:nrow(tracers)){
 }
 
 nc_close(outnc)
+
+# DayLight ----------------------------------------------------------------
+# As of code version v6645 and later we need to add the Tracer DayLight. Initialize it as the same as Light
+require(RNetCDF)
+
+outnc <- open.nc(nc.file, write=TRUE) # open .nc file
+
+light <- var.get.nc(outnc, "Light")
+
+# define the new variable
+var.def.nc(outnc, "DayLight", "NC_DOUBLE", c("z","b","t"))
+
+# prepare all attributes for the new variable
+att.put.nc(outnc, "DayLight", "units", "NC_CHAR", "missing")
+att.put.nc(outnc, "DayLight", "_FillValue", "NC_DOUBLE", 0)
+att.put.nc(outnc, "DayLight", "long_name", "NC_CHAR", "Daylight intensity on the surface of a cell")
+att.put.nc(outnc, "DayLight", "bmtype", "NC_CHAR", "tracer")
+att.put.nc(outnc, "DayLight", "dtype", "NC_INT", 0)
+att.put.nc(outnc, "DayLight", "sumtype", "NC_INT", 1)
+att.put.nc(outnc, "DayLight", "inwc", "NC_INT", 0)
+att.put.nc(outnc, "DayLight", "insed", "NC_INT", 0)
+att.put.nc(outnc, "DayLight", "dissol", "NC_INT", 1)
+att.put.nc(outnc, "DayLight", "decay", "NC_DOUBLE", 0)
+att.put.nc(outnc, "DayLight", "partic", "NC_INT", 0)
+att.put.nc(outnc, "DayLight", "fill.value", "NC_DOUBLE", 0)
+
+# add variable to the NC file
+var.put.nc(ncfile = outnc, variable = "DayLight", data = light, count = c(NA, NA, NA))
+
+# close the file
+close.nc(outnc)
 
 # Bacteria ----------------------------------------------------------------
 
