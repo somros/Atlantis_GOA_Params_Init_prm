@@ -78,7 +78,7 @@ migratory.proportion <- read_csv("migiobox_proportion.csv")
 #these are groups that have all or a proportion of the population outside the model on January 1st
 #see Table Migration parameters in Tech memo
 
-mig.groups <- c("WHT","WHG","WHH","PIN","BDF","BDI","BSF","SCH","SCM","SCO","SPI","SSO","HAK") # "SHP" and "EUL" migrate at other times of the year, i.e. they are in the model on Jan 1
+mig.groups <- c("WHT","WHG","WHH","PIN","BDF","BDI","BSF","SCH","SCM","SCO","SPI","SSO","HAK") # "SHP" migrates at other times of the year, i.e. they are in the model on Jan 1
 
 salmon.codes <- NA # this was used in AMPS
 
@@ -441,7 +441,7 @@ num.biomass.frame <- lapply(age.structured.sp, nc_vector, num.biomass.age = num.
 #this can be used if it is the first time you create init files
 init.file  <- "GOA_init.csv"
 horiz.file <- "GOA_horiz.csv"
-nc.file    <- "GOA_cb_new.nc"
+nc.file    <- "GOA_cb_summer.nc"
 
 #add Nums to empty horiz.csv file created above
 horiz.data %>% 
@@ -468,13 +468,13 @@ atlantis.box <- atlantis.bgm %>% box_sf()
 # values calculated in init_calculator.R at https://github.com/somros/plankton_nutrients_init
 # local address is C:/Users/Alberto Rovellini/Documents/GOA/SDM/Plankton_and_nutrients/outputs/init/
 
-plankton.files <- list.files('C:/Users/Alberto Rovellini/Documents/GOA/SDM/Plankton_and_nutrients/outputs/init/', full.names = T)
+plankton.files <- list.files('C:/Users/Alberto Rovellini/Documents/GOA/SDM/Plankton_and_nutrients/outputs/init_summer/', full.names = T)
 
 outnc <- nc_open(nc.file, write=TRUE) # open .nc file
 
 for(i in 1:length(plankton.files)){
   this.file <- plankton.files[i]
-  this.var <- gsub('.txt','',gsub('.*init/','',this.file))
+  this.var <- gsub('.txt','',gsub('.*init_summer/','',this.file))
   this.data <- read.table(this.file,sep=',')
   this.data.horiz <- t(this.data[,-ncol(this.data)])
   
