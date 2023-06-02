@@ -192,7 +192,7 @@ options(digits=3)
 
 # Dummy scalars for trial runs --------------------------------------------
 
-nc_name <- '../data/scalar_heatwave_ZM_PL_025.nc'
+nc_name <- '../data/scalar_heatwave_PL_ZM_EUP_03_Hindcast.nc'
 
 nc_file <- create.nc(nc_name)
 
@@ -203,7 +203,7 @@ seconds_timestep <- 43200 * 2 * 365
 this_geometry <- "GOA_WGS84_V4_final.bgm"
 
 # time array
-time_array <- seq(0, seconds_timestep * 40, seconds_timestep)
+time_array <- seq(0, seconds_timestep * 70, seconds_timestep)
 ntime <- length(time_array)
 
 # scalar array
@@ -216,23 +216,36 @@ ntime <- length(time_array)
 #                       dim = c(nlayer, nbox, ntime))
 
 # for heatwave runs
-scalar_array <- array(data = c(rep(matrix(1, nrow = nlayer, ncol = nbox), 31),
-                               rep(matrix(0.25, nrow = nlayer, ncol = nbox), 5),
-                               rep(matrix(1, nrow = nlayer, ncol = nbox), 5)),
+# ZM
+scalar_array <- array(data = c(rep(matrix(1, nrow = nlayer, ncol = nbox), 62),
+                               rep(matrix(0.3, nrow = nlayer, ncol = nbox), 4),
+                               rep(matrix(1, nrow = nlayer, ncol = nbox), 4)),
                       dim = c(nlayer, nbox, ntime))
+
+# and PL
+# scalar_array_PL <- array(data = c(rep(matrix(1, nrow = nlayer, ncol = nbox), 31),
+#                                   rep(matrix(0.5, nrow = nlayer, ncol = nbox), 20)),
+#                                   #rep(matrix(1, nrow = nlayer, ncol = nbox), 5)),
+#                          dim = c(nlayer, nbox, ntime))
 
 dim.def.nc(nc_file, "t", unlim=TRUE)
 dim.def.nc(nc_file, "b", nbox) # manual
 dim.def.nc(nc_file, "z", nlayer) # manual I am not sure about this, do we need the sediment layer in the fluxes??
 
 var.def.nc(nc_file, "t", "NC_DOUBLE", "t")
-var.def.nc(nc_file, "ZMgrowth_ff", "NC_DOUBLE", c("z","b","t"))
+#var.def.nc(nc_file, "PSgrowth_ff", "NC_DOUBLE", c("z","b","t"))
 var.def.nc(nc_file, "PLgrowth_ff", "NC_DOUBLE", c("z","b","t"))
-#var.def.nc(nc_file, "EUPgrowth_ff", "NC_DOUBLE", c("z","b","t"))
+#var.def.nc(nc_file, "ZSgrowth_ff", "NC_DOUBLE", c("z","b","t"))
+var.def.nc(nc_file, "ZMgrowth_ff", "NC_DOUBLE", c("z","b","t"))
+#var.def.nc(nc_file, "ZLgrowth_ff", "NC_DOUBLE", c("z","b","t"))
+var.def.nc(nc_file, "EUPgrowth_ff", "NC_DOUBLE", c("z","b","t"))
 
-att.put.nc(nc_file, "ZMgrowth_ff", "_FillValue", "NC_DOUBLE", 1)
+#att.put.nc(nc_file, "PSgrowth_ff", "_FillValue", "NC_DOUBLE", 1)
 att.put.nc(nc_file, "PLgrowth_ff", "_FillValue", "NC_DOUBLE", 1)
-#att.put.nc(nc_file, "EUPgrowth_ff", "_FillValue", "NC_DOUBLE", 1)
+#att.put.nc(nc_file, "ZSgrowth_ff", "_FillValue", "NC_DOUBLE", 1)
+att.put.nc(nc_file, "ZMgrowth_ff", "_FillValue", "NC_DOUBLE", 1)
+#att.put.nc(nc_file, "ZLgrowth_ff", "_FillValue", "NC_DOUBLE", 1)
+att.put.nc(nc_file, "EUPgrowth_ff", "_FillValue", "NC_DOUBLE", 1)
 att.put.nc(nc_file, "t", "units", "NC_CHAR", t_units)
 att.put.nc(nc_file, "t", "dt", "NC_DOUBLE", seconds_timestep)
 att.put.nc(nc_file, "NC_GLOBAL", "title", "NC_CHAR", "External scalar for plankton growth")
@@ -240,9 +253,12 @@ att.put.nc(nc_file, "NC_GLOBAL", "geometry", "NC_CHAR", this_geometry)
 att.put.nc(nc_file, "NC_GLOBAL", "parameters", "NC_CHAR", " ")
 
 var.put.nc(nc_file, "t", time_array)
-var.put.nc(nc_file, "ZMgrowth_ff", scalar_array)
+#var.put.nc(nc_file, "PSgrowth_ff", scalar_array)
 var.put.nc(nc_file, "PLgrowth_ff", scalar_array)
-#var.put.nc(nc_file, "EUPgrowth_ff", scalar_array)
+#var.put.nc(nc_file, "ZSgrowth_ff", scalar_array)
+var.put.nc(nc_file, "ZMgrowth_ff", scalar_array)
+#var.put.nc(nc_file, "ZLgrowth_ff", scalar_array)
+var.put.nc(nc_file, "EUPgrowth_ff", scalar_array)
 
 
 close.nc(nc_file)
